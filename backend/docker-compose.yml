@@ -106,7 +106,7 @@ services:
     image: node:20-alpine
     container_name: auth-service
     working_dir: /app
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install --no-audit --no-fund && npm run dev"
     ports:
       - "4001:4001"
     environment:
@@ -126,8 +126,8 @@ services:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4001/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 20s
+      retries: 30
+      start_period: 300s
     depends_on:
       auth-db:
         condition: service_healthy
@@ -136,7 +136,7 @@ services:
     image: node:20-alpine
     container_name: vehicle-service
     working_dir: /app
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install --no-audit --no-fund && npm run dev"
     ports:
       - "4002:4002"
     environment:
@@ -161,14 +161,14 @@ services:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4002/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 20s
+      retries: 30
+      start_period: 300s
 
   traffic-service:
     image: node:20-alpine
     container_name: traffic-service
     working_dir: /app
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install --no-audit --no-fund && npm run dev"
     ports:
       - "4003:4003"
     environment:
@@ -193,14 +193,14 @@ services:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4003/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 20s
+      retries: 30
+      start_period: 300s
 
   incident-service:
     image: node:20-alpine
     container_name: incident-service
     working_dir: /app
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install --no-audit --no-fund && npm run dev"
     ports:
       - "4004:4004"
     environment:
@@ -228,14 +228,14 @@ services:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4004/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 20s
+      retries: 30
+      start_period: 300s
 
   notification-service:
     image: node:20-alpine
     container_name: notification-service
     working_dir: /app
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install --no-audit --no-fund && npm run dev"
     ports:
       - "4005:4005"
     environment:
@@ -263,15 +263,15 @@ services:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4005/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 20s
+      retries: 30
+      start_period: 300s
 
   gateway:
     image: node:20-alpine
     container_name: api-gateway
     restart: always
     working_dir: /app
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install --no-audit --no-fund && npm run dev"
     ports:
       - "4000:4000"
     environment:
