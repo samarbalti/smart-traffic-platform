@@ -63,7 +63,14 @@ const resolvers = {
         pubsub.publish(NEW_INCIDENT, { newIncidentNotification: notification });
       }
 
-      await redis.setEx(`notification:${notification.id}`, 86400, JSON.stringify(notification));
+      try {
+        if (redis.isOpen) {
+          await redis.setEx(`notification:${notification.id}`, 86400, JSON.stringify(notification));
+        }
+      } catch (error) {
+        console.log('Redis cache skipped for notification:', error.message);
+      }
+
       return notification;
     },
 

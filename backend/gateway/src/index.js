@@ -85,20 +85,16 @@ function decodeToken(authHeader) {
 }
 
 async function run() {
-  let retries = 10;
-  while (retries > 0) {
+  let attempt = 1;
+  while (true) {
     try {
       await startGateway();
       break;
     } catch (err) {
-      console.error(`[Gateway Retry] Composition failed: ${err.message}. Retrying in 5 seconds... (${retries} retries remaining)`);
-      retries--;
+      console.error(`[Gateway Retry] Attempt ${attempt} failed: ${err.message}. Retrying in 5 seconds...`);
+      attempt++;
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
-  }
-  if (retries === 0) {
-    console.error('All gateway composition retries failed. Exiting.');
-    process.exit(1);
   }
 }
 

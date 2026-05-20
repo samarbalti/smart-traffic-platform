@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Typography, Button, Paper, Chip, Grid } from '@mui/material'
+import { Box, Typography, Button, Paper, Chip, Grid, Alert, CircularProgress } from '@mui/material'
 import { MapContainer, TileLayer, Polygon, Popup } from 'react-leaflet'
 import { useQuery, useMutation, gql } from '@apollo/client'
 import { DataGrid } from '@mui/x-data-grid'
@@ -48,12 +48,16 @@ const densityColors = {
 };
 
 export default function Traffic() {
-  const { data, loading, refetch } = useQuery(GET_ZONES);
-  const [calculateDensities] = useMutation(CALCULATE_DENSITIES);
+  const { data, loading, error, refetch } = useQuery(GET_ZONES);
+  const [calculateDensities, { loading: calculating }] = useMutation(CALCULATE_DENSITIES);
 
   const handleCalculate = async () => {
-    await calculateDensities();
-    refetch();
+    try {
+      await calculateDensities();
+      await refetch();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const columns = [
@@ -69,10 +73,18 @@ export default function Traffic() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h4">Gestion du Trafic</Typography>
-        <Button variant="contained" onClick={handleCalculate}>
-          Recalculer les densites
+        <Button variant="contained" onClick={handleCalculate} disabled={calculating}>
+          {calculating ? 'Calcul...' : 'Recalculer les densites'}
         </Button>
       </Box>
+
+      {error && <Alert severity="error" sx={{ mb: 2 }}>Erreur trafic: {error.message}</Alert>}
+      {!loading && !error && data?.zones?.length === 0 && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Aucune zone trouvee. Cliquez sur Recalculer les densites pour creer des zones demo.
+        </Alert>
+      )}
+      {calculating && <CircularProgress size={24} sx={{ mb: 2 }} />}
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>

@@ -1,11 +1,23 @@
 import React from 'react'
 import { AppBar, Toolbar, Typography, Box, IconButton, Badge, Avatar, Menu, MenuItem } from '@mui/material'
 import { Notifications as NotificationsIcon, Logout as LogoutIcon } from '@mui/icons-material'
+import { Link } from 'react-router-dom'
+import { useQuery, gql } from '@apollo/client'
 import { useAuth } from '../hooks/useAuth'
+
+const UNREAD_COUNT = gql`
+  query UnreadCount {
+    unreadCount
+  }
+`;
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const { data } = useQuery(UNREAD_COUNT, {
+    pollInterval: 10000,
+    fetchPolicy: 'cache-and-network'
+  });
 
   return (
     <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
@@ -15,8 +27,8 @@ export default function Navbar() {
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton color="inherit">
-            <Badge badgeContent={3} color="error">
+          <IconButton color="inherit" component={Link} to="/notifications">
+            <Badge badgeContent={data?.unreadCount || 0} color="error">
               <NotificationsIcon />
             </Badge>
           </IconButton>

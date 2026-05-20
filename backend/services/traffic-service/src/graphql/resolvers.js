@@ -10,6 +10,45 @@ const calculateDensity = (vehicleCount, avgSpeed) => {
   return 'FAIBLE';
 };
 
+const defaultZones = [
+  {
+    name: 'Centre-ville Tunis',
+    description: 'Zone centrale',
+    coordinates: [
+      { lat: 36.81, lng: 10.18 },
+      { lat: 36.81, lng: 10.19 },
+      { lat: 36.80, lng: 10.19 },
+      { lat: 36.80, lng: 10.18 }
+    ],
+    centerLat: 36.805,
+    centerLng: 10.185
+  },
+  {
+    name: 'Ariana',
+    description: 'Zone nord',
+    coordinates: [
+      { lat: 36.86, lng: 10.18 },
+      { lat: 36.86, lng: 10.19 },
+      { lat: 36.85, lng: 10.19 },
+      { lat: 36.85, lng: 10.18 }
+    ],
+    centerLat: 36.855,
+    centerLng: 10.185
+  },
+  {
+    name: 'La Marsa',
+    description: 'Zone cotiere',
+    coordinates: [
+      { lat: 36.89, lng: 10.32 },
+      { lat: 36.89, lng: 10.33 },
+      { lat: 36.88, lng: 10.33 },
+      { lat: 36.88, lng: 10.32 }
+    ],
+    centerLat: 36.885,
+    centerLng: 10.325
+  }
+];
+
 const resolvers = {
   Zone: {
     coordinates: (parent) => parent.coordinates || []
@@ -118,7 +157,12 @@ const resolvers = {
 
     calculateAllDensities: async (_, __, context) => {
       await checkAuth(context);
-      const zones = await Zone.findAll();
+      let zones = await Zone.findAll();
+
+      if (zones.length === 0) {
+        await Zone.bulkCreate(defaultZones);
+        zones = await Zone.findAll();
+      }
 
       for (const zone of zones) {
         const vehicleCount = Math.floor(Math.random() * 100);

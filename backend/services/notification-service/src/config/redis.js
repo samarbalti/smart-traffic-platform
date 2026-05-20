@@ -7,7 +7,12 @@ const client = createClient({
 client.on('error', (err) => console.log('Redis Client Error:', err));
 
 (async () => {
-  await client.connect();
+  try {
+    await client.connect();
+    console.log('Redis connected');
+  } catch (err) {
+    console.log('Redis unavailable, notifications will continue without cache:', err.message);
+  }
 })();
 
 module.exports = client;

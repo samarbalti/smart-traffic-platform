@@ -1,7 +1,8 @@
-import React from 'react'
-import { Box, Typography, List, ListItem, ListItemText, IconButton, Badge, Chip } from '@mui/material'
-import { MarkEmailRead as ReadIcon } from '@mui/icons-material'
+import React, { useState } from 'react'
+import { Box, Typography, List, ListItem, ListItemText, IconButton, Badge, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Alert, CircularProgress } from '@mui/material'
+import { Add as AddIcon, MarkEmailRead as ReadIcon } from '@mui/icons-material'
 import { useQuery, useMutation, gql } from '@apollo/client'
+import { useAuth } from '../hooks/useAuth'
 
 const GET_NOTIFICATIONS = gql`
   query GetNotifications {
@@ -33,10 +34,31 @@ const MARK_ALL_READ = gql`
   }
 `;
 
+const SEND_NOTIFICATION = gql`
+  mutation SendNotification($input: SendNotificationInput!) {
+    sendNotification(input: $input) {
+      id
+      title
+      message
+      type
+      isRead
+      createdAt
+    }
+  }
+`;
+
 export default function Notifications() {
-  const { data, refetch } = useQuery(GET_NOTIFICATIONS);
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    message: '',
+    type: 'GENERAL'
+  });
+  const { data, loading, error, refetch } = useQuery(GET_NOTIFICATIONS);
   const [markAsRead] = useMutation(MARK_READ);
   const [markAllAsRead] = useMutation(MARK_ALL_READ);
+  const [sendNotification, { loading: sending }] = useMutation(SEND_NOTIFICATION);
 
   const handleMarkRead = async (id) => {
     await markAsRead({ variables: { input: { notificationId: id } } });
@@ -45,6 +67,20 @@ export default function Notifications() {
 
   const handleMarkAllRead = async () => {
     await markAllAsRead();
+    refetch();
+  };
+
+  const handleSend = async () => {
+    await sendNotification({
+      variables: {
+        input: {
+          ...formData,
+          userId: user.id
+        }
+      }
+    });
+    setFormData({ title: '', message: '', type: 'GENERAL' });
+    setOpen(false);
     refetch();
   };
 
@@ -66,10 +102,21 @@ export default function Notifications() {
             <Badge badgeContent={data.unreadCount} color="error" sx={{ ml: 2 }} />
           )}
         </Typography>
-        <IconButton onClick={handleMarkAllRead} title="Tout marquer comme lu">
-          <ReadIcon />
-        </IconButton>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)}>
+            Envoyer
+          </Button>
+          <IconButton onClick={handleMarkAllRead} title="Tout marquer comme lu">
+            <ReadIcon />
+          </IconButton>
+        </Box>
       </Box>
+
+      {loading && <CircularProgress />}
+      {error && <Alert severity="error">Erreur notifications: {error.message}</Alert>}
+      {!loading && !error && data?.myNotifications?.length === 0 && (
+        <Alert severity="info">Aucune notification pour le moment.</Alert>
+      )}
 
       <List>
         {data?.myNotifications?.map((notif) => (
@@ -113,6 +160,54 @@ export default function Notifications() {
           </ListItem>
         ))}
       </List>
+
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Envoyer une notification</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Titre"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            margin="normal"
+            required
+          />
+          <TextField
+            fullWidth
+            multiline
+            minRows={3}
+            label="Message"
+            value={formData.message}
+            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+            margin="normal"
+            required
+          />
+          <TextField
+            select
+            fullWidth
+            label="Type"
+            value={formData.type}
+            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+            margin="normal"
+          >
+            <MenuItem value="GENERAL">GENERAL</MenuItem>
+            <MenuItem value="SYSTEM">SYSTEM</MenuItem>
+            <MenuItem value="INCIDENT">INCIDENT</MenuItem>
+            <MenuItem value="STATUS_UPDATE">STATUS_UPDATE</MenuItem>
+            <MenuItem value="TRAFFIC_ALERT">TRAFFIC_ALERT</MenuItem>
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Annuler</Button>
+          <Button
+            variant="contained"
+            disabled={sending || !formData.title || !formData.message}
+            onClick={handleSend}
+          >
+            {sending ? 'Envoi...' : 'Envoyer'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

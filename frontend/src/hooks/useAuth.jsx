@@ -29,6 +29,21 @@ const LOGIN_MUTATION = gql`
   }
 `;
 
+const REGISTER_MUTATION = gql`
+  mutation Register($input: RegisterInput!) {
+    register(input: $input) {
+      token
+      user {
+        id
+        email
+        firstName
+        lastName
+        role
+      }
+    }
+  }
+`;
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -36,28 +51,36 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const { refetch } = useQuery(ME_QUERY, {
-    skip: !localStorage.getItem('token'),
-    onCompleted: (data) => {
-      if (data?.me) {
-        setUser(data.me);
-        setIsAuthenticated(true);
-      }
-      setLoading(false);
-    },
-    onError: () => {
-      logout();
-      setLoading(false);
-    }
+  const hasToken = Boolean(localStorage.getItem('token'));
+  const { data: meData, error: meError, refetch } = useQuery(ME_QUERY, {
+    skip: !hasToken,
   });
 
   useEffect(() => {
-    if (!localStorage.getItem('token')) {
+    if (!hasToken) {
       setLoading(false);
     }
-  }, []);
+  }, [hasToken]);
+
+  useEffect(() => {
+    if (meData?.me) {
+      setUser(meData.me);
+      setIsAuthenticated(true);
+      setLoading(false);
+    }
+  }, [meData]);
+
+  useEffect(() => {
+    if (meError) {
+      localStorage.removeItem('token');
+      setUser(null);
+      setIsAuthenticated(false);
+      setLoading(false);
+    }
+  }, [meError]);
 
   const [loginMutation] = useMutation(LOGIN_MUTATION);
+  const [registerMutation] = useMutation(REGISTER_MUTATION);
 
   const login = async (email, password) => {
     try {
@@ -74,7 +97,25 @@ export function AuthProvider({ children }) {
         } catch (e) {}
         return { success: true };
       }
-      return { success: false, error: 'Connexion échouée' };
+      return { success: false, error: 'Connexion echouee' };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
+  const register = async (input) => {
+    try {
+      const { data } = await registerMutation({
+        variables: { input }
+      });
+
+      if (data?.register?.token) {
+        localStorage.setItem('token', data.register.token);
+        setUser(data.register.user);
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+      return { success: false, error: 'Inscription echouee' };
     } catch (error) {
       return { success: false, error: error.message };
     }
@@ -88,7 +129,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, loading, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -102,6 +143,7 @@ export function useAuth() {
       user: null,
       loading: false,
       login: async () => ({ success: false }),
+      register: async () => ({ success: false }),
       logout: () => {}
     };
   }

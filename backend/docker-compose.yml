@@ -95,6 +95,11 @@ services:
     container_name: redis
     ports:
       - "16379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # ==================== SERVICES NODE.JS (sans build) ====================
   auth-service:
@@ -117,6 +122,12 @@ services:
     volumes:
       - ./services/auth-service:/app
       - /app/node_modules
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4001/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     depends_on:
       auth-db:
         condition: service_healthy
@@ -145,7 +156,13 @@ services:
       vehicle-db:
         condition: service_healthy
       auth-service:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4002/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   traffic-service:
     image: node:20-alpine
@@ -171,7 +188,13 @@ services:
       traffic-db:
         condition: service_healthy
       auth-service:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4003/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   incident-service:
     image: node:20-alpine
@@ -198,9 +221,15 @@ services:
       incident-db:
         condition: service_healthy
       auth-service:
-        condition: service_started
+        condition: service_healthy
       notification-service:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4004/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   notification-service:
     image: node:20-alpine
@@ -227,9 +256,15 @@ services:
       notification-db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       auth-service:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4005/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   gateway:
     image: node:20-alpine
@@ -252,11 +287,16 @@ services:
       - ./gateway:/app
       - /app/node_modules
     depends_on:
-      - auth-service
-      - vehicle-service
-      - traffic-service
-      - incident-service
-      - notification-service
+      auth-service:
+        condition: service_healthy
+      vehicle-service:
+        condition: service_healthy
+      traffic-service:
+        condition: service_healthy
+      incident-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
 
 volumes:
   auth_db_data:

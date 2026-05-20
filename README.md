@@ -80,6 +80,28 @@ node scripts\seed-data.js
 
 Le script cree des vehicules, des zones, des incidents et calcule des densites de trafic.
 
+## Tests unitaires
+
+Les tests Jest se trouvent dans le backend, par exemple:
+
+```text
+backend/services/auth-service/src/graphql/resolvers.test.js
+```
+
+Pour lancer les tests:
+
+```powershell
+cd C:\Users\admin\Downloads\smart-traffic-platform-complete\backend
+npm test
+```
+
+Les tests actuels verifient le service d'authentification:
+
+- inscription utilisateur;
+- refus d'un email deja utilise;
+- connexion avec identifiants valides;
+- refus d'un mauvais mot de passe.
+
 ## Requetes GraphQL de test
 
 Login:
