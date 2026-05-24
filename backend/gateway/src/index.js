@@ -4,6 +4,7 @@ const { ApolloGateway, IntrospectAndCompose, RemoteGraphQLDataSource } = require
 const { ApolloServer } = require('apollo-server-express');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -30,6 +31,7 @@ async function startGateway() {
     buildService({ name, url }) {
       return new RemoteGraphQLDataSource({
         url,
+        fetcher: fetch,
         willSendRequest({ request, context }) {
           if (context.authHeader) {
             request.http.headers.set('Authorization', context.authHeader);
